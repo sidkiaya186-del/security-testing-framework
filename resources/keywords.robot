@@ -20,23 +20,21 @@ Ouvrir Le Navigateur Sur La Page De Login
     Fermer Les Bannieres Eventuelles
 
 Fermer Les Bannieres Eventuelles
-    [Documentation]    Juice Shop affiche un bandeau "Welcome" puis un bandeau de cookies
-    ...    au premier chargement. Ils bloquent les clics tant qu'ils sont visibles.
-    ...    On tente de les fermer sans faire échouer le test s'ils n'apparaissent pas.
-    Sleep    1.5s
-    Run Keyword And Ignore Error    Click Element    css=.close-dialog
-    Run Keyword And Ignore Error    Click Element    css=button[aria-label="Close Welcome Banner"]
-    Run Keyword And Ignore Error    Click Element    id=welcomeBanner-close
-    Run Keyword And Ignore Error    Click Element    css=mat-dialog-actions button
-    Run Keyword And Ignore Error    Click Element    css=[aria-label="Close Welcome Banner"]
-    Run Keyword And Ignore Error    Click Element    css=.cc-dismiss
-    Run Keyword And Ignore Error    Click Element    css=.cdk-overlay-backdrop
-    Sleep    0.5s
+    [Documentation]    Juice Shop affiche un bandeau "Welcome", un bandeau de cookies, et parfois
+    ...    des notifications (snackbar). Plutôt que de cliquer dessus (peu fiable en CI headless
+    ...    où le timing d'animation diffère), on les supprime directement du DOM via JavaScript -
+    ...    une approche immunisée contre les problèmes de timing/position de clic.
+    Sleep    1s
+    Execute Javascript
+    ...    document.querySelectorAll('.cc-window, .cdk-overlay-container, .cdk-overlay-backdrop, .mat-mdc-snack-bar-container, mat-dialog-container').forEach(function(el){ el.remove(); });
+    Sleep    0.3s
 
 Se Connecter Avec
     [Arguments]    ${username}    ${password}
+    Fermer Les Bannieres Eventuelles
     Input Text       ${USERNAME_FIELD}    ${username}
     Input Password   ${PASSWORD_FIELD}    ${password}
+    Fermer Les Bannieres Eventuelles
     Click Button     ${LOGIN_BUTTON}
 
 Se Deconnecter
