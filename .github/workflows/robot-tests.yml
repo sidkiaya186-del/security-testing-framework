@@ -24,10 +24,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: (Optionnel) Démarrage de l'application cible (DVWA via Docker)
+      - name: Démarrage de l'application cible (OWASP Juice Shop via Docker)
         run: |
-          docker run -d -p 8080:80 --name dvwa vulnerables/web-dvwa
-          sleep 15
+          docker run -d -p 3000:3000 --name juice-shop bkimminich/juice-shop
+          echo "Attente du démarrage de Juice Shop..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "Juice Shop est prêt."
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Création des comptes de test (utilisateur normal + admin via mass assignment)
+        run: |
+          curl -s -X POST http://localhost:3000/api/Users \
+            -H "Content-Type: application/json" \
+            -d '{"email":"testuser@example.com","password":"Test1234!"}'
+          curl -s -X POST http://localhost:3000/api/Users \
+            -H "Content-Type: application/json" \
+            -d '{"email":"admin-test@example.com","password":"AdminTest123!","role":"admin"}'
 
       - name: Exécution des tests Robot Framework
         run: |
