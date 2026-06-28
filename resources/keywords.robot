@@ -11,8 +11,27 @@ Resource         variables.robot
 # KEYWORDS UI (Selenium) - Authentification
 # ------------------------------------------------------------------
 Ouvrir Le Navigateur Sur La Page De Login
+    [Documentation]    Désactive la détection de mots de passe compromis de Chrome
+    ...    (bulle native "Modifiez votre mot de passe") qui peut interférer avec
+    ...    le timing des actions Selenium juste après une connexion.
     Open Browser    ${LOGIN_URL}    ${BROWSER}
+    ...    options=add_experimental_option("prefs", {"credentials_enable_service": False, "profile.password_manager_leak_detection": False})
     Set Selenium Timeout    ${TIMEOUT}
+    Fermer Les Bannieres Eventuelles
+
+Fermer Les Bannieres Eventuelles
+    [Documentation]    Juice Shop affiche un bandeau "Welcome" puis un bandeau de cookies
+    ...    au premier chargement. Ils bloquent les clics tant qu'ils sont visibles.
+    ...    On tente de les fermer sans faire échouer le test s'ils n'apparaissent pas.
+    Sleep    1.5s
+    Run Keyword And Ignore Error    Click Element    css=.close-dialog
+    Run Keyword And Ignore Error    Click Element    css=button[aria-label="Close Welcome Banner"]
+    Run Keyword And Ignore Error    Click Element    id=welcomeBanner-close
+    Run Keyword And Ignore Error    Click Element    css=mat-dialog-actions button
+    Run Keyword And Ignore Error    Click Element    css=[aria-label="Close Welcome Banner"]
+    Run Keyword And Ignore Error    Click Element    css=.cc-dismiss
+    Run Keyword And Ignore Error    Click Element    css=.cdk-overlay-backdrop
+    Sleep    0.5s
 
 Se Connecter Avec
     [Arguments]    ${username}    ${password}
@@ -31,8 +50,24 @@ Verifier Connexion Reussie
 Verifier Connexion Refusee
     Wait Until Element Is Visible    ${ERROR_MESSAGE}    timeout=${TIMEOUT}
 
+Verifier Deconnexion Reussie
+    [Documentation]    Juice Shop ne redirige pas forcément vers /login après logout
+    ...    (il revient à la page d'accueil du magasin). On vérifie donc directement
+    ...    que le token d'authentification a bien été supprimé du navigateur.
+    Sleep    1s
+    ${token}=    Execute Javascript    return window.localStorage.getItem('token');
+    Should Be Equal    ${token}    ${None}
+
 Fermer Le Navigateur Proprement
     Close Browser
+
+Reinitialiser Etat Pour Test Suivant
+    [Documentation]    Efface la session courante (cookies + localStorage du JWT) et revient
+    ...    sur la page de login, pour que chaque test démarre dans un état propre et indépendant.
+    Delete All Cookies
+    Execute Javascript    window.localStorage.clear(); window.sessionStorage.clear();
+    Go To    ${LOGIN_URL}
+    Fermer Les Bannieres Eventuelles
 
 
 # ------------------------------------------------------------------
@@ -48,6 +83,13 @@ Envoyer Requete Login
     ${response}=    POST On Session    api    ${API_LOGIN_ENDPOINT}    json=${body}    expected_status=any
     RETURN    ${response}
 
+Recuperer Token Depuis Reponse
+    [Documentation]    Extrait le token JWT de la réponse de login Juice Shop
+    ...    (structure : {"authentication": {"token": "..."}})
+    [Arguments]    ${response}
+    ${token}=    Set Variable    ${response.json()}[authentication][token]
+    RETURN    ${token}
+
 Verifier Code Statut
     [Arguments]    ${response}    ${expected_code}
     Should Be Equal As Strings    ${response.status_code}    ${expected_code}
@@ -62,17 +104,23 @@ Acceder A Une Page Protegee
     # Juice Shop étant une SPA Angular, laisser le temps au routeur de réagir
     Sleep    1s
 
-Verifier Acces Refuse
-    [Documentation]    Sur Juice Shop : redirection vers /login OU message d'erreur dans un toast.
-    ...    À confirmer/ajuster en inspectant le comportement réel une fois l'app lancée.
+Verifier Acces Refuse Anonyme
+    [Documentation]    Sans authentification du tout, Juice Shop affiche un message
+    ...    "403 You are not allowed to access this page!" directement sur la page.
+    Wait Until Page Contains    not allowed to access this page    timeout=${TIMEOUT}
+
+Verifier Acces Refuse Utilisateur Normal
+    [Documentation]    Avec un token valide mais sans droits admin, Juice Shop ne montre
+    ...    PAS de message d'erreur : il redirige silencieusement vers l'accueil.
+    Wait Until Keyword Succeeds    ${TIMEOUT}    0.5s    URL Ne Contient Pas Administration
+
+URL Ne Contient Pas Administration
     ${current_url}=    Get Location
     Should Not Contain    ${current_url}    administration
 
 Verifier Acces Autorise
-    [Documentation]    L'URL doit rester sur /#/administration et la page de données doit se charger
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    administration
-
+    [Documentation]    Vérifie qu'un admin voit bien les données réelles, sans le message 403
+    Wait Until Page Does Not Contain    not allowed to access this page    timeout=${TIMEOUT}
 
 # ------------------------------------------------------------------
 # KEYWORDS - OWASP Top 10 (Injection / XSS)

@@ -14,13 +14,20 @@ ${API_LOGIN_ENDPOINT}   /rest/user/login
 # dont le mot de passe doit être retrouvé via un challenge, ou un compte que tu crées toi-même
 # via /#/register). Crée un compte de test "normal" et, si possible, élève un compte en admin
 # via le challenge "Database schema" / JWT du projet une fois familiarisé avec l'app.
-${VALID_USER}           admin@juice-sh.op
-${VALID_PASSWORD}       SuperSecurePassword123!
+${VALID_USER}           testuser@example.com
+${VALID_PASSWORD}       Test1234!
 ${INVALID_USER}         hacker@evil.com
 ${INVALID_PASSWORD}     wrongpass
 
 ${NORMAL_USER}          testuser@example.com
 ${NORMAL_PASSWORD}      Test1234!
+
+# Compte admin obtenu via une faille de mass assignment sur POST /api/Users
+# (le champ "role":"admin" n'est pas filtré côté serveur - vulnérabilité réelle
+# et volontaire de Juice Shop, catégorie OWASP API3:2023 Broken Object Property
+# Level Authorization). Voir README.md, section "Vulnérabilités découvertes".
+${ADMIN_USER}           admin-test@example.com
+${ADMIN_PASSWORD}       AdminTest123!
 
 # --- Sélecteurs Selenium (DOM réel de Juice Shop, Angular Material) ---
 ${USERNAME_FIELD}       id=email
