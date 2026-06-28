@@ -47,7 +47,7 @@ jobs:
 
       - name: Exécution des tests Robot Framework
         run: |
-          robot --outputdir reports tests/
+          robot --outputdir reports --variable TIMEOUT:30s tests/
 
       - name: Upload du rapport HTML
         if: always()
