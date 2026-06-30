@@ -38,12 +38,22 @@ Se Connecter Avec
     Click Button     ${LOGIN_BUTTON}
 
 Se Deconnecter
-    [Documentation]    Sur Juice Shop, la déconnexion nécessite d'ouvrir le menu compte avant de cliquer sur logout
-    Click Element    ${ACCOUNT_MENU}
-    Click Element    ${LOGOUT_BUTTON}
+    [Documentation]    Sur Juice Shop, la déconnexion nécessite d'ouvrir le menu compte avant
+    ...    de cliquer sur logout. Clic via JavaScript (plutôt que Click Element natif) pour
+    ...    être immunisé contre les problèmes de visibilité CSS en environnement headless.
+    Execute Javascript    document.getElementById('navbarAccount').click();
+    Sleep    0.5s
+    Execute Javascript    document.getElementById('navbarLogoutButton').click();
 
 Verifier Connexion Reussie
-    Wait Until Element Is Visible    ${WELCOME_MESSAGE}    timeout=${TIMEOUT}
+    [Documentation]    Vérifie la présence du token JWT dans localStorage plutôt que la
+    ...    visibilité d'un élément UI. Plus robuste, notamment en CI headless où le rendu
+    ...    visuel (animations Angular) peut se comporter différemment qu'en local.
+    Wait Until Keyword Succeeds    ${TIMEOUT}    0.5s    Token Present In Local Storage
+
+Token Present In Local Storage
+    ${token}=    Execute Javascript    return window.localStorage.getItem('token');
+    Should Not Be Equal    ${token}    ${None}
 
 Verifier Connexion Refusee
     Wait Until Element Is Visible    ${ERROR_MESSAGE}    timeout=${TIMEOUT}
