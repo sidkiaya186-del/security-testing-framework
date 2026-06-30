@@ -39,13 +39,14 @@ Se Connecter Avec
 
 Se Deconnecter
     [Documentation]    Sur Juice Shop, la déconnexion nécessite d'ouvrir le menu compte avant
-    ...    de cliquer sur logout. On attend explicitement que l'élément existe dans le DOM
-    ...    (Angular peut prendre plus de temps à le rendre en CI headless) avant le clic JS.
-    Wait Until Page Contains Element    id=navbarAccount    timeout=${TIMEOUT}
-    Execute Javascript    document.getElementById('navbarAccount').click();
-    Sleep    0.5s
-    Wait Until Page Contains Element    id=navbarLogoutButton    timeout=${TIMEOUT}
-    Execute Javascript    document.getElementById('navbarLogoutButton').click();
+    ...    de cliquer sur logout. Un clic Selenium natif (pas JS) est nécessaire ici car
+    ...    Angular Material attend une vraie séquence d'événements souris pour ouvrir
+    ...    correctement l'overlay du menu (un simple element.click() JS ne suffit pas
+    ...    toujours à déclencher l'animation d'ouverture).
+    Wait Until Element Is Visible    id=navbarAccount    timeout=${TIMEOUT}
+    Click Element    id=navbarAccount
+    Wait Until Element Is Visible    id=navbarLogoutButton    timeout=${TIMEOUT}
+    Click Element    id=navbarLogoutButton
 
 Verifier Connexion Reussie
     [Documentation]    Vérifie la présence du token JWT dans localStorage plutôt que la
