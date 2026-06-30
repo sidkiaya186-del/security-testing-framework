@@ -39,10 +39,12 @@ Se Connecter Avec
 
 Se Deconnecter
     [Documentation]    Sur Juice Shop, la déconnexion nécessite d'ouvrir le menu compte avant
-    ...    de cliquer sur logout. Clic via JavaScript (plutôt que Click Element natif) pour
-    ...    être immunisé contre les problèmes de visibilité CSS en environnement headless.
+    ...    de cliquer sur logout. On attend explicitement que l'élément existe dans le DOM
+    ...    (Angular peut prendre plus de temps à le rendre en CI headless) avant le clic JS.
+    Wait Until Page Contains Element    id=navbarAccount    timeout=${TIMEOUT}
     Execute Javascript    document.getElementById('navbarAccount').click();
     Sleep    0.5s
+    Wait Until Page Contains Element    id=navbarLogoutButton    timeout=${TIMEOUT}
     Execute Javascript    document.getElementById('navbarLogoutButton').click();
 
 Verifier Connexion Reussie
@@ -121,6 +123,16 @@ Verifier Acces Refuse Utilisateur Normal
     [Documentation]    Avec un token valide mais sans droits admin, Juice Shop ne montre
     ...    PAS de message d'erreur : il redirige silencieusement vers l'accueil.
     Wait Until Keyword Succeeds    ${TIMEOUT}    0.5s    URL Ne Contient Pas Administration
+
+Verifier Acces Refuse Utilisateur Normal Ou Anonyme
+    [Documentation]    Accepte deux signaux possibles d'accès refusé : soit le message
+    ...    "403 not allowed", soit une redirection (URL qui change). Robuste face aux
+    ...    variations de timing/rendu entre environnement local et CI headless.
+    ${refuse}=    Run Keyword And Return Status    Wait Until Page Contains
+    ...    not allowed to access this page    timeout=5s
+    IF    not ${refuse}
+        Wait Until Keyword Succeeds    ${TIMEOUT}    0.5s    URL Ne Contient Pas Administration
+    END
 
 URL Ne Contient Pas Administration
     ${current_url}=    Get Location
