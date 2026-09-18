@@ -98,6 +98,12 @@ jobs:
           npm audit --json > ../npm-audit-report.json || true
           npm audit || true
 
+      - name: Envoi du rapport a n8n pour notification
+        run: |
+          curl -X POST https://ayasidki.app.n8n.cloud/webhook/npm-audit-report \
+            -H "Content-Type: application/json" \
+            -d @npm-audit-report.json
+
       - name: Upload du rapport npm audit
         if: always()
         uses: actions/upload-artifact@v4
